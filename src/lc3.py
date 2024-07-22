@@ -17,13 +17,6 @@ class OPCODES(Enum):
     STR = 0b0111
     TRAP = 0b1111
     
-
-
-
-
-    
-
-    
 class LC:
     def __init__(self):
         self.memory = [0 for _ in range(2 ** 16)]
@@ -31,7 +24,6 @@ class LC:
         self.br = 0  
         self.nzp = 0
         self.pc = 0
-  
 
     def decode(self, instruction: int):
         opcode =  instruction >> 12
@@ -72,11 +64,19 @@ class LC:
                     sr = (instruction >> 6) & (1 <<4) -1
                     self.jssr(sr)
             case OPCODES.LD:
-                ...
+                offset = instruction & (1 << 10) - 1 
+                dr = (instruction>>9) & (1  << 4) -1 
+                self.ld(dr, offset)
             case OPCODES.LDI:
-                ...
+                offset = instruction & (1 << 10) - 1 
+                dr = (instruction>>9) & (1  << 4) -1 
+                self.ld(dr, offset)
+                self.ldi(dr, offset)
             case OPCODES.LDR:
-                ...
+                offset = instruction & (1 << 7) -1
+                sr = (instruction >> 6) & (1 << 4)-1
+                dr = (instruction >> 9) & (1 <<4) -1
+                self.ldr(dr,sr, offset)
             case OPCODES.LEA:
                 ...
             case OPCODES.NOT:
@@ -134,4 +134,16 @@ class LC:
         self.registers[6] = self.pc
         self.pc = self.registers[sr]
 
+    def ld(self, dr, offset):
+        self.registers[dr] = self.memory[self.pc + offset]
+        self.setnzp(dr)
 
+    def ldi(self, dr, offset):
+        address = self.memory[self.pc + offset]
+        self.registers[dr] = self.memory[address]
+        self.setnzp(dr)
+
+    def ldr(self, dr, sr, offset):
+        address = self.memory[self.registers[sr] + offset]
+        self.registers[dr] = self.memory[address]
+        self.setnzp(dr)
