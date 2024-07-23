@@ -14,6 +14,7 @@ class OPCODES(Enum):
     RET = 0b1100
     RTI = 0b1000
     ST = 0b0011
+    STI = 0b1011
     STR = 0b0111
     TRAP = 0b1111
     
@@ -24,6 +25,7 @@ class LC:
         self.br = 0  
         self.nzp = 0
         self.pc = 0
+        self.psr = 0
 
     def decode(self, instruction: int):
         opcode =  instruction >> 12
@@ -78,17 +80,30 @@ class LC:
                 dr = (instruction >> 9) & (1 <<4) -1
                 self.ldr(dr,sr, offset)
             case OPCODES.LEA:
-                ...
+                offset = instruction & (1 << 10) -1 
+                dr = instruction >> 9 & (1 << 4) - 1
+                self.lea(dr, offset)
             case OPCODES.NOT:
-                ...
+                dr = (instruction >> 9) & (1 <<4)-1
+                sr = (instruction >>6) & (1 << 4)-1
+                self.noti(dr,sr) 
             case OPCODES.RET:
-                ...
+                self.ret()
             case OPCODES.RTI:
                 ...
             case OPCODES.ST:
-                ...
+                sr = (instruction >> 9) & (1 <<4)-1
+                offset = instruction & (1 <<10)-1
+                self.st(sr, offset)
+            case OPCODES.STI:
+                offset = instruction & (1 <<10) -10
+                sr = (instruction >> 9) & (1 <<4)-1
+                self.sti(sr,offset)
             case OPCODES.STR:
-                ...
+                offset = instruction & (1 <<7) -1 
+                br = (instruction >> 6) &  (1 <<4) -1
+                sr = (instruction >> 9) &  (1 <<4) -1
+                self.str(sr, br, offset)
             case OPCODES.TRAP:
                 ...
             case _:
@@ -147,3 +162,24 @@ class LC:
         address = self.memory[self.registers[sr] + offset]
         self.registers[dr] = self.memory[address]
         self.setnzp(dr)
+
+    def lea(self, dr, offset):
+        self.registers[dr] = self.pc + offset
+        self.setnzp(dr)
+
+    def noti(self, dr, sr):
+        self.registers[dr] = ~self.registers[sr]
+        self.setnzp(dr)
+
+    def ret(self):
+        self.jmp(7)
+
+    def st(self, sr, offset):
+        self.memory[self.pc + offset] = self.registers[sr]
+    
+    def str(self, sr, br, offset):
+        self.memory[self.registers[br] + offset] = self.registers[sr]
+
+    def sti(self, sr, offset):
+        self.memory[self.memory[self.pc + offset]] = self.registers[sr]
+
